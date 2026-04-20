@@ -1,0 +1,20 @@
+# macOS / editor noise
+.DS_Store
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Logs
+*.log
+
+# Large local index artifacts (share separately)
+data/vectorstore/
+
+# Local planning/docs not part of code handoff
+KRR Projects.pdf
+Project07_Plan.docx
+Project07_Plan.pdf
+data/clean_kb/Module3_Audit_Report.docx
+data/clean_kb/~$*.docx
