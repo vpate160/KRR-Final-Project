@@ -1,0 +1,3 @@
+timestamp_utc,attack_type,poison_rate,detector,dataset,n_examples,n_answered,n_with_gold,n_failures,exact_match,token_f1,generation_backend,ollama_model,vectorstore_path,collection_requested,collection_resolved,top_k
+2026-04-20T00:27:56.731729+00:00,clean,0.0,none,natural_questions,20,20,13,0,0.0,0.10223749773542441,ollama,llama3.1:8b,/Users/VATSAL/Downloads/KRR Final Project implementation/data/vectorstore/clean,kb,kb0,5
+2026-04-20T00:30:06.867053+00:00,clean,0.0,none,natural_questions,20,20,13,0,0.05,0.10907625757135124,ollama,llama3.1:8b,/Users/VATSAL/Downloads/KRR Final Project implementation/data/vectorstore/clean,kb,kb0,5
