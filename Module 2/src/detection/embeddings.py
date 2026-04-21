@@ -1,14 +1,3 @@
-"""Task 2.1 — Embedding extraction.
-
-Encodes a KB jsonl (clean or poisoned) into aligned arrays:
-- embeddings.npy  shape=(N, 768) float32
-- doc_ids.json    list[str] length N
-- labels.npy      shape=(N,)    int8, 1 if is_poisoned else 0
-
-Vatsal's Module 3 already produced `data/embeddings/clean_embeddings.npy` +
-`clean_doc_ids.json` with the same model (all-mpnet-base-v2). This module
-reuses those outputs for the clean KB and only (re-)encodes poisoned variants.
-"""
 from __future__ import annotations
 
 import logging
@@ -32,7 +21,6 @@ from .utils import (
 
 LOGGER = logging.getLogger(__name__)
 
-
 def _pick_device(requested: str = "auto") -> str:
     if requested != "auto":
         return requested
@@ -47,14 +35,12 @@ def _pick_device(requested: str = "auto") -> str:
         pass
     return "cpu"
 
-
 def encode_texts(
     texts: List[str],
     model_name: str = EMBEDDING_MODEL,
     batch_size: int = 64,
     device: str = "auto",
 ) -> np.ndarray:
-    """Encode a list of texts with sentence-transformers. Not normalized."""
     from sentence_transformers import SentenceTransformer
 
     resolved_device = _pick_device(device)
@@ -73,7 +59,6 @@ def encode_texts(
         )
     return embeddings.astype(np.float32)
 
-
 def extract_fields(records: List[Dict]) -> Tuple[List[str], List[str], np.ndarray]:
     doc_ids: List[str] = []
     texts: List[str] = []
@@ -90,7 +75,6 @@ def extract_fields(records: List[Dict]) -> Tuple[List[str], List[str], np.ndarra
         labels.append(1 if bool(rec.get("is_poisoned", False)) else 0)
     return doc_ids, texts, np.asarray(labels, dtype=np.int8)
 
-
 def extract_and_save(
     kb_path: Path,
     variant: str,
@@ -98,7 +82,6 @@ def extract_and_save(
     device: str = "auto",
     force: bool = False,
 ) -> Dict[str, Path]:
-    """Encode a KB file and save embeddings/doc_ids/labels under Module 2's data dir."""
     paths = variant_paths(variant)
 
     if not force and all(p.exists() for p in (paths["embeddings"], paths["doc_ids"], paths["labels"])):
@@ -128,9 +111,7 @@ def extract_and_save(
     )
     return paths
 
-
 def ensure_clean_labels() -> Path:
-    """Produce a labels.npy of zeros aligned to Vatsal's clean_doc_ids.json."""
     labels_path = M2_EMBEDDINGS / "clean_labels.npy"
     if labels_path.exists():
         return labels_path
@@ -146,9 +127,7 @@ def ensure_clean_labels() -> Path:
     LOGGER.info("Wrote clean labels (all zeros) for %d docs -> %s", len(doc_ids), labels_path)
     return labels_path
 
-
 def load_variant(variant: str) -> Tuple[np.ndarray, List[str], np.ndarray]:
-    """Load (embeddings, doc_ids, labels) for a variant. Auto-creates clean labels."""
     paths = variant_paths(variant)
     if variant == "clean":
         ensure_clean_labels()
@@ -168,14 +147,7 @@ def load_variant(variant: str) -> Tuple[np.ndarray, List[str], np.ndarray]:
         )
     return embeddings, doc_ids, labels
 
-
 def discover_poisoned_variants(poisoned_dir: Optional[Path] = None) -> List[Tuple[str, Path]]:
-    """Scan the poisoned KB staging dir for files named `poisoned_*.jsonl`.
-
-    Returns a list of (variant_name, path) tuples where variant_name is everything
-    after `poisoned_` and before `.jsonl`. E.g. `poisoned_factual_10pct.jsonl` ->
-    ('factual_10pct', Path(...)).
-    """
     from .utils import M2_POISONED_KB
 
     root = poisoned_dir or M2_POISONED_KB

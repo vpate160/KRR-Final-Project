@@ -1,19 +1,3 @@
-"""Task 2.5 — Mitigation pipeline.
-
-For a chosen detector + poisoned variant:
-1. Flag poisoned documents (re-scoring the variant with the chosen detector).
-2. Produce a filtered KB jsonl with flagged docs removed.
-3. Rebuild a Chroma vector store over the filtered KB by invoking Module 3's
-   unchanged `scripts/build_vectorstore.py` as a subprocess.
-4. Re-run Module 3's unchanged evaluator (`evaluate_clean_rag_on_nq`) against
-   the filtered store.
-5. Append a recovery row to the repo-root `results/metrics.csv` using Module 3's
-   exact schema, with `detector=mitigated`.
-
-Optionally runs the "undefended" (poisoned, unfiltered) variant too, for a
-same-run before/after comparison. That phase produces Hardik's degradation row
-if he hasn't already.
-"""
 from __future__ import annotations
 
 import logging
@@ -62,7 +46,6 @@ DEFAULT_TEMPERATURE = 0.1
 MITIGATED_DETECTOR_TAG = "mitigated"
 UNDEFENDED_DETECTOR_TAG = "none"
 
-
 @dataclass
 class MitigationOutcome:
     variant: str
@@ -75,15 +58,13 @@ class MitigationOutcome:
     undefended_metrics: Optional[Dict[str, Any]] = None
     flagged_doc_ids: List[str] = field(default_factory=list)
 
-
 def _predict_isoforest_or_lof(detector_name: str, variant: str) -> Tuple[List[str], np.ndarray]:
     embeddings, doc_ids, _ = load_variant(variant)
     clean_emb, _, _ = load_variant("clean")
     detectors = train_detectors(clean_emb)
     det = detectors[detector_name]
-    preds = (det.predict(embeddings) == -1).astype(int)  # type: ignore[attr-defined]
+    preds = (det.predict(embeddings) == -1).astype(int)
     return doc_ids, preds
-
 
 def _predict_neural(variant: str, threshold_override: Optional[float]) -> Tuple[List[str], np.ndarray]:
     import torch
@@ -112,13 +93,11 @@ def _predict_neural(variant: str, threshold_override: Optional[float]) -> Tuple[
     preds = (probs >= threshold).astype(int)
     return doc_ids, preds
 
-
 def flag_documents(
     variant: str,
     detector: str,
     threshold_override: Optional[float] = None,
 ) -> Tuple[List[str], np.ndarray]:
-    """Return (doc_ids, binary_preds) where preds[i]=1 means "flag this doc"."""
     set_seed()
     if detector in (ISOLATION_FOREST, LOF):
         return _predict_isoforest_or_lof(detector, variant)
@@ -126,13 +105,11 @@ def flag_documents(
         return _predict_neural(variant, threshold_override)
     raise ValueError(f"Unknown detector for mitigation: {detector}")
 
-
 def filter_kb(
     src_kb_path: Path,
     flagged_ids: Set[str],
     out_path: Path,
 ) -> Tuple[int, int]:
-    """Write a filtered copy of `src_kb_path` with docs in `flagged_ids` removed."""
     if not src_kb_path.exists():
         raise FileNotFoundError(f"KB not found: {src_kb_path}")
     records = load_jsonl(src_kb_path)
@@ -148,12 +125,10 @@ def filter_kb(
     )
     return n_flagged, len(kept)
 
-
 def _clean_vectorstore_dir(path: Path) -> None:
     if path.exists():
         LOGGER.info("Removing stale vectorstore dir: %s", path)
         shutil.rmtree(path)
-
 
 def build_vectorstore_subprocess(
     kb_path: Path,
@@ -161,7 +136,6 @@ def build_vectorstore_subprocess(
     collection_name: str = "kb",
     embedding_model: str = EMBEDDING_MODEL,
 ) -> None:
-    """Invoke Vatsal's unchanged build_vectorstore.py as a subprocess."""
     _clean_vectorstore_dir(persist_dir)
     cmd = [
         sys.executable,
@@ -178,7 +152,6 @@ def build_vectorstore_subprocess(
     LOGGER.info("Building vector store: %s", " ".join(cmd))
     subprocess.run(cmd, check=True, cwd=str(REPO_ROOT))
 
-
 def run_module3_evaluator(
     vectorstore_path: Path,
     *,
@@ -192,10 +165,9 @@ def run_module3_evaluator(
     temperature: float = DEFAULT_TEMPERATURE,
     predictions_path: Optional[Path] = None,
 ) -> Dict[str, Any]:
-    """Call Module 3's unchanged evaluator and return the raw metrics dict."""
     if str(MODULE3_SCRIPTS) not in sys.path:
         sys.path.insert(0, str(MODULE3_SCRIPTS))
-    from evaluate_rag import evaluate_clean_rag_on_nq  # type: ignore
+    from evaluate_rag import evaluate_clean_rag_on_nq
 
     LOGGER.info(
         "Running Module 3 evaluator on vectorstore=%s with n_examples=%d", vectorstore_path, n_examples
@@ -219,16 +191,13 @@ def run_module3_evaluator(
     LOGGER.info("Eval done: EM=%.4f F1=%.4f", metrics.get("exact_match", 0.0), metrics.get("token_f1", 0.0))
     return dict(metrics)
 
-
 def append_module3_metrics(row: Dict[str, Any]) -> None:
-    """Append a row to the repo-root results/metrics.csv using Module 3's writer."""
     if str(MODULE3_SCRIPTS) not in sys.path:
         sys.path.insert(0, str(MODULE3_SCRIPTS))
-    from evaluate_rag import append_metrics_row  # type: ignore
+    from evaluate_rag import append_metrics_row
 
     ROOT_METRICS_CSV.parent.mkdir(parents=True, exist_ok=True)
     append_metrics_row(ROOT_METRICS_CSV, row)
-
 
 def _override_row(
     base_metrics: Dict[str, Any],
@@ -242,7 +211,6 @@ def _override_row(
     row["detector"] = detector_tag
     row["timestamp_utc"] = datetime.now(timezone.utc).isoformat()
     return row
-
 
 def run_mitigation(
     variant: str,
@@ -258,7 +226,6 @@ def run_mitigation(
     if variant == "clean":
         raise ValueError("Cannot mitigate the 'clean' variant (nothing to filter).")
 
-    # 1. Flag documents.
     doc_ids, preds = flag_documents(variant, detector, threshold_override=threshold)
     flagged_ids = {doc_ids[i] for i, flag in enumerate(preds) if flag == 1}
     LOGGER.info(
@@ -269,7 +236,6 @@ def run_mitigation(
         variant,
     )
 
-    # 2. Write filtered KB.
     poisoned_kb_path = variant_paths(variant)["kb"]
     if not poisoned_kb_path.exists():
         raise FileNotFoundError(
@@ -279,11 +245,9 @@ def run_mitigation(
     filtered_kb_path = M2_FILTERED_KB / f"filtered_{variant}_{detector}.jsonl"
     n_flagged, n_kept = filter_kb(poisoned_kb_path, flagged_ids, filtered_kb_path)
 
-    # 3. Rebuild vector store over filtered KB.
     defended_vs = M2_VECTORSTORES / f"filtered_{variant}_{detector}"
     build_vectorstore_subprocess(filtered_kb_path, defended_vs)
 
-    # 4. Run evaluator on filtered store.
     def _pred_path(tag: str) -> Optional[Path]:
         if predictions_root is None:
             return None

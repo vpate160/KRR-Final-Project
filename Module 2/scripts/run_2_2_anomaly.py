@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-"""Task 2.2 — Run Isolation Forest + LOF on every poisoned variant."""
 from __future__ import annotations
 
 import argparse
@@ -11,12 +9,11 @@ _MODULE2_ROOT = Path(__file__).resolve().parents[1]
 if str(_MODULE2_ROOT) not in sys.path:
     sys.path.insert(0, str(_MODULE2_ROOT))
 
-from src.detection.anomaly_detector import evaluate_variants  # noqa: E402
-from src.detection.embeddings import discover_poisoned_variants  # noqa: E402
-from src.detection.utils import M2_POISONED_KB, setup_logging  # noqa: E402
+from src.detection.anomaly_detector import evaluate_variants
+from src.detection.embeddings import discover_poisoned_variants
+from src.detection.utils import M2_POISONED_KB, setup_logging
 
 LOGGER = logging.getLogger("run_2_2_anomaly")
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Task 2.2 — Unsupervised anomaly detection.")
@@ -30,7 +27,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--n-neighbors", type=int, default=20)
     parser.add_argument("--log-level", type=str, default="INFO")
     return parser.parse_args()
-
 
 def main() -> int:
     args = parse_args()
@@ -55,7 +51,6 @@ def main() -> int:
         n_neighbors=args.n_neighbors,
     )
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

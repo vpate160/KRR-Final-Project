@@ -1,14 +1,3 @@
-#!/usr/bin/env python3
-"""Smoke test for Task 2.2 plumbing using synthetic embeddings.
-
-Does NOT touch Module 3's real data files. Exercises:
-- utils.append_detection_row (CSV writer)
-- anomaly_detector.train_detectors + score_with (sklearn integration)
-- Metric correctness on a dataset where clean and "poisoned" are separated.
-
-Run after `pip install numpy scikit-learn` to validate before pulling the
-full deps (torch / transformers / sentence-transformers).
-"""
 from __future__ import annotations
 
 import sys
@@ -20,7 +9,6 @@ import numpy as np
 _MODULE2_ROOT = Path(__file__).resolve().parents[1]
 if str(_MODULE2_ROOT) not in sys.path:
     sys.path.insert(0, str(_MODULE2_ROOT))
-
 
 def test_append_detection_row_to_tempfile() -> None:
     from src.detection import utils
@@ -49,9 +37,7 @@ def test_append_detection_row_to_tempfile() -> None:
         assert "isolation_forest" in data
     print("OK test_append_detection_row_to_tempfile")
 
-
 def test_train_detectors_and_score() -> None:
-    """Synthetic clean + poisoned embeddings; both detectors should catch the shift."""
     from src.detection.anomaly_detector import (
         ISOLATION_FOREST,
         LOF,
@@ -86,7 +72,6 @@ def test_train_detectors_and_score() -> None:
         )
     print("OK test_train_detectors_and_score")
 
-
 def test_variant_name_parsers() -> None:
     from src.detection.anomaly_detector import (
         _attack_type_from_variant,
@@ -109,14 +94,12 @@ def test_variant_name_parsers() -> None:
         )
     print("OK test_variant_name_parsers")
 
-
 def main() -> int:
     test_append_detection_row_to_tempfile()
     test_variant_name_parsers()
     test_train_detectors_and_score()
     print("\nALL SMOKE TESTS PASSED")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

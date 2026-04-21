@@ -1,14 +1,3 @@
-"""Task 2.4b — LLM-as-judge baseline.
-
-Prompts the same `llama3.1:8b` model Module 3 uses (via local Ollama) to
-classify whether each document looks factually suspicious. Reuses Module 3's
-`OllamaGenerator` so there's a single source of truth for the HTTP client and
-its settings.
-
-Runtime note: at ~1-2 s per document on a laptop, judging 5000 docs takes
-roughly 1.5-3 hours. Pass `--max-docs` to stratified-sample a smaller subset
-during iteration.
-"""
 from __future__ import annotations
 
 import logging
@@ -49,22 +38,17 @@ Passage:
 
 Verdict (yes or no):"""
 
-
 def _import_ollama_generator():
-    """Lazily import Module 3's OllamaGenerator without modifying that repo."""
     if str(MODULE3_SCRIPTS) not in sys.path:
         sys.path.insert(0, str(MODULE3_SCRIPTS))
-    from build_rag_pipeline import OllamaGenerator  # type: ignore
+    from build_rag_pipeline import OllamaGenerator
 
     return OllamaGenerator
-
 
 _YES_RE = re.compile(r"\byes\b", flags=re.IGNORECASE)
 _NO_RE = re.compile(r"\bno\b", flags=re.IGNORECASE)
 
-
 def parse_verdict(response: str) -> int:
-    """Return 1 if the model says yes (suspicious), 0 otherwise."""
     if not response:
         return 0
     head = response.strip().lower()[:40]
@@ -72,17 +56,14 @@ def parse_verdict(response: str) -> int:
         return 1
     if _NO_RE.search(head):
         return 0
-    # Ambiguous. Be conservative — don't flag.
     LOGGER.debug("Ambiguous verdict response: %r", response[:80])
     return 0
-
 
 def _stratified_sample(
     labels: np.ndarray,
     max_docs: int,
     seed: int,
 ) -> np.ndarray:
-    """Return indices of a stratified subsample preserving the label ratio."""
     rng = np.random.default_rng(seed)
     if max_docs >= len(labels):
         return np.arange(len(labels))
@@ -100,7 +81,6 @@ def _stratified_sample(
     chosen = np.concatenate([sampled_pos, sampled_neg])
     rng.shuffle(chosen)
     return np.sort(chosen)
-
 
 def evaluate_variant(
     variant: str,
@@ -176,7 +156,7 @@ def evaluate_variant(
         precision=float(precision_score(labels, preds, zero_division=0)),
         recall=float(recall_score(labels, preds, zero_division=0)),
         f1=float(f1_score(labels, preds, zero_division=0)),
-        roc_auc=float("nan"),  # binary output; no meaningful AUC
+        roc_auc=float("nan"),
         threshold_desc="yes/no",
     )
     LOGGER.info(
@@ -194,7 +174,6 @@ def evaluate_variant(
         notes=f"model={ollama_model} n={len(records)} failures={failures}",
     )
     return result
-
 
 def evaluate_variants(
     variants: List[str],
