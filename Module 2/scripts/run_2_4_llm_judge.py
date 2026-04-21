@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""Task 2.4b — LLM-as-judge baseline via local Ollama.
-
-Requires Ollama running (`brew install --cask ollama` + `ollama pull llama3.1:8b`),
-the same setup Vatsal's RAG pipeline uses.
-"""
 from __future__ import annotations
 
 import argparse
@@ -15,12 +9,11 @@ _MODULE2_ROOT = Path(__file__).resolve().parents[1]
 if str(_MODULE2_ROOT) not in sys.path:
     sys.path.insert(0, str(_MODULE2_ROOT))
 
-from src.detection.embeddings import discover_poisoned_variants  # noqa: E402
-from src.detection.llm_judge import evaluate_variants  # noqa: E402
-from src.detection.utils import M2_POISONED_KB, setup_logging  # noqa: E402
+from src.detection.embeddings import discover_poisoned_variants
+from src.detection.llm_judge import evaluate_variants
+from src.detection.utils import M2_POISONED_KB, setup_logging
 
 LOGGER = logging.getLogger("run_2_4_llm_judge")
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Task 2.4b — LLM-as-judge baseline.")
@@ -37,7 +30,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-new-tokens", type=int, default=8)
     parser.add_argument("--log-level", type=str, default="INFO")
     return parser.parse_args()
-
 
 def main() -> int:
     args = parse_args()
@@ -64,7 +56,6 @@ def main() -> int:
         max_new_tokens=args.max_new_tokens,
     )
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,18 +1,3 @@
-"""Task 2.3 — Supervised neural binary classifier for poisoned documents.
-
-MLP on top of 768-dim all-mpnet-base-v2 embeddings:
-    768 -> 256 -> ReLU -> Dropout(0.3) -> 64 -> ReLU -> 1 (logit)
-
-Training uses BCEWithLogitsLoss (numerically stable; sigmoid is applied at
-inference only). Class imbalance is handled via `pos_weight = n_neg / n_pos`.
-
-Per-variant pipeline:
-1. Stratified 70/30 split of the variant's embeddings + labels.
-2. Further carve a 15% internal validation slice off the train portion.
-3. Train up to `max_epochs` with early stopping on val loss.
-4. Choose decision threshold on the val slice by maximizing F1.
-5. Report precision / recall / F1 / ROC-AUC on the untouched test slice.
-"""
 from __future__ import annotations
 
 import logging
@@ -36,7 +21,6 @@ LOGGER = logging.getLogger(__name__)
 
 NEURAL = "neural_classifier"
 
-
 @dataclass
 class TrainingHistory:
     train_loss: List[float]
@@ -44,7 +28,6 @@ class TrainingHistory:
     best_epoch: int
     best_val_loss: float
     threshold: float
-
 
 def _make_model(input_dim: int = EMBEDDING_DIM) -> "torch.nn.Module":
     import torch.nn as nn
@@ -57,7 +40,6 @@ def _make_model(input_dim: int = EMBEDDING_DIM) -> "torch.nn.Module":
         nn.ReLU(),
         nn.Linear(64, 1),
     )
-
 
 def _stratified_split(
     labels: np.ndarray,
@@ -75,7 +57,6 @@ def _stratified_split(
     )
     return train_idx, test_idx
 
-
 def _pick_device() -> str:
     import torch
 
@@ -84,7 +65,6 @@ def _pick_device() -> str:
     if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
         return "mps"
     return "cpu"
-
 
 def train_classifier(
     embeddings: np.ndarray,
@@ -100,10 +80,6 @@ def train_classifier(
     weight_decay: float = 1e-5,
     device: Optional[str] = None,
 ) -> Tuple["torch.nn.Module", Dict[str, np.ndarray], TrainingHistory]:
-    """Train the MLP and return (model, index_splits, history).
-
-    `index_splits` has keys 'train', 'val', 'test' with the original indices.
-    """
     import torch
     import torch.nn as nn
     from torch.utils.data import DataLoader, TensorDataset
@@ -117,7 +93,6 @@ def train_classifier(
         raise ValueError("Cannot train classifier: labels contain no negative examples.")
 
     train_idx_full, test_idx = _stratified_split(labels, train_ratio, seed)
-    # Carve internal val slice off the train portion.
     sub_labels = labels[train_idx_full]
     inner_train_ratio = 1.0 - val_ratio_of_train
     inner_train_rel, val_rel = _stratified_split(sub_labels, inner_train_ratio, seed + 1)
@@ -217,7 +192,6 @@ def train_classifier(
     splits = {"train": train_idx, "val": val_idx, "test": test_idx}
     return model, splits, history
 
-
 def _pick_threshold_on_val(
     model: "torch.nn.Module",
     x_val: "torch.Tensor",
@@ -243,7 +217,6 @@ def _pick_threshold_on_val(
     LOGGER.info("Best val threshold=%.2f (val F1=%.3f)", best_t, best_f1)
     return best_t
 
-
 def score_test(
     model: "torch.nn.Module",
     embeddings: np.ndarray,
@@ -252,7 +225,6 @@ def score_test(
     threshold: float,
     variant: str,
 ) -> DetectorResult:
-    """Evaluate on the held-out test slice."""
     import torch
     from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
 
@@ -283,7 +255,6 @@ def score_test(
         threshold_desc=f"{threshold:.2f}",
     )
 
-
 def _save_model(model: "torch.nn.Module", variant: str, history: TrainingHistory) -> Path:
     import torch
 
@@ -300,7 +271,6 @@ def _save_model(model: "torch.nn.Module", variant: str, history: TrainingHistory
     )
     LOGGER.info("Saved MLP checkpoint -> %s", out)
     return out
-
 
 def train_and_evaluate_variant(
     variant: str,
@@ -346,7 +316,6 @@ def train_and_evaluate_variant(
         notes=f"best_epoch={history.best_epoch} best_val_loss={history.best_val_loss:.4f}",
     )
     return result
-
 
 def evaluate_variants(variants: List[str], **kwargs) -> List[DetectorResult]:
     results: List[DetectorResult] = []

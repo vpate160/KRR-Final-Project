@@ -1,13 +1,3 @@
-"""Task 2.4a — Perplexity baseline (GPT-2).
-
-Computes per-document GPT-2 perplexity and flags the top-K% most perplex docs
-as poisoned. K defaults to the variant's known poison rate (an oracle choice
-that makes the baseline as strong as possible, so our method has to beat it).
-
-Note on chunking: docs longer than GPT-2's 1024-token window are scored via a
-sliding window (stride=512) and averaged per-token NLL. This matches standard
-perplexity-over-long-text practice and prevents truncation from inflating PPL.
-"""
 from __future__ import annotations
 
 import logging
@@ -31,7 +21,6 @@ LOGGER = logging.getLogger(__name__)
 
 PERPLEXITY = "perplexity"
 
-
 def _load_gpt2(model_name: str = "gpt2", device: Optional[str] = None):
     import torch
     from transformers import GPT2LMHeadModel, GPT2TokenizerFast
@@ -48,7 +37,6 @@ def _load_gpt2(model_name: str = "gpt2", device: Optional[str] = None):
     model = GPT2LMHeadModel.from_pretrained(model_name).to(device).eval()
     return tokenizer, model, device
 
-
 def _doc_nll_sliding(
     text: str,
     tokenizer,
@@ -57,7 +45,6 @@ def _doc_nll_sliding(
     max_length: int = 1024,
     stride: int = 512,
 ) -> float:
-    """Average per-token negative log-likelihood via sliding window."""
     import torch
 
     encodings = tokenizer(text, return_tensors="pt")
@@ -88,13 +75,11 @@ def _doc_nll_sliding(
     total_tokens = sum(token_counts)
     return total_nll / max(total_tokens, 1)
 
-
 def compute_perplexities(
     texts: List[str],
     model_name: str = "gpt2",
     device: Optional[str] = None,
 ) -> np.ndarray:
-    """Return an array of perplexities aligned to `texts`."""
     tokenizer, model, device = _load_gpt2(model_name, device)
     out = np.empty(len(texts), dtype=np.float32)
     for i, t in enumerate(texts):
@@ -104,7 +89,6 @@ def compute_perplexities(
             LOGGER.info("scored %d/%d (latest ppl=%.2f)", i + 1, len(texts), out[i])
     return out
 
-
 def _threshold_top_k(scores: np.ndarray, k_frac: float) -> Tuple[float, np.ndarray]:
     if not 0.0 < k_frac < 1.0:
         raise ValueError(f"k_frac must be in (0, 1); got {k_frac}")
@@ -112,14 +96,12 @@ def _threshold_top_k(scores: np.ndarray, k_frac: float) -> Tuple[float, np.ndarr
     preds = (scores >= cutoff).astype(int)
     return cutoff, preds
 
-
 def evaluate_variant(
     variant: str,
     model_name: str = "gpt2",
     k_frac: Optional[float] = None,
     device: Optional[str] = None,
 ) -> DetectorResult:
-    """Score a variant with GPT-2 perplexity; flag top-K% as poisoned."""
     from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
 
     set_seed()
@@ -176,7 +158,6 @@ def evaluate_variant(
     save_scores(result)
     log_result(result, notes=f"model={model_name}")
     return result
-
 
 def evaluate_variants(
     variants: List[str],

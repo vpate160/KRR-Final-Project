@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-"""Task 2.3 — Train and evaluate the supervised MLP classifier per variant."""
 from __future__ import annotations
 
 import argparse
@@ -11,12 +9,11 @@ _MODULE2_ROOT = Path(__file__).resolve().parents[1]
 if str(_MODULE2_ROOT) not in sys.path:
     sys.path.insert(0, str(_MODULE2_ROOT))
 
-from src.detection.embeddings import discover_poisoned_variants  # noqa: E402
-from src.detection.neural_classifier import evaluate_variants  # noqa: E402
-from src.detection.utils import M2_POISONED_KB, setup_logging  # noqa: E402
+from src.detection.embeddings import discover_poisoned_variants
+from src.detection.neural_classifier import evaluate_variants
+from src.detection.utils import M2_POISONED_KB, setup_logging
 
 LOGGER = logging.getLogger("run_2_3_neural")
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Task 2.3 — Supervised MLP classifier.")
@@ -27,7 +24,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--log-level", type=str, default="INFO")
     return parser.parse_args()
-
 
 def main() -> int:
     args = parse_args()
@@ -53,7 +49,6 @@ def main() -> int:
         lr=args.lr,
     )
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

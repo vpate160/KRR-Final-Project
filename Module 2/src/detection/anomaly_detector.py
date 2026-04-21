@@ -1,18 +1,3 @@
-"""Task 2.2 — Unsupervised anomaly detectors on embedding space.
-
-Trains on clean embeddings only (simulating "we trust the clean baseline") and
-scores each poisoned KB variant. Produces per-document anomaly scores plus
-aggregate precision / recall / F1 / ROC-AUC vs. ground truth labels.
-
-Two detectors from scikit-learn:
-- IsolationForest  — ensemble of random trees; anomalies isolate in few splits.
-- LocalOutlierFactor (novelty=True) — density-based; compares local density of a
-  test point to its neighbors in the clean training set.
-
-Both use `contamination='auto'` by default because the plan's hardcoded 0.1 is
-optimistic (it requires knowing the poison rate in advance). ROC-AUC is
-threshold-independent; precision / recall / F1 use each method's auto threshold.
-"""
 from __future__ import annotations
 
 import logging
@@ -43,7 +28,6 @@ LOGGER = logging.getLogger(__name__)
 ISOLATION_FOREST = "isolation_forest"
 LOF = "lof"
 
-
 @dataclass
 class DetectorResult:
     detector: str
@@ -57,9 +41,7 @@ class DetectorResult:
     roc_auc: float
     threshold_desc: str = "auto"
 
-
 def _poison_rate_from_variant(variant: str) -> float:
-    """Best-effort parse of a numeric poison rate from variant names like 'factual_10pct'."""
     for part in variant.split("_"):
         if part.endswith("pct"):
             try:
@@ -67,7 +49,6 @@ def _poison_rate_from_variant(variant: str) -> float:
             except ValueError:
                 return 0.0
     return 0.0
-
 
 def _attack_type_from_variant(variant: str) -> str:
     if variant.startswith("factual"):
@@ -78,7 +59,6 @@ def _attack_type_from_variant(variant: str) -> str:
         return "stealthy_injection"
     return variant
 
-
 def train_detectors(
     clean_embeddings: np.ndarray,
     *,
@@ -87,7 +67,6 @@ def train_detectors(
     n_neighbors: int = 20,
     contamination: str | float = "auto",
 ) -> Dict[str, object]:
-    """Fit both detectors on clean embeddings."""
     set_seed(seed)
 
     LOGGER.info(
@@ -117,13 +96,11 @@ def train_detectors(
 
     return {ISOLATION_FOREST: iso, LOF: lof}
 
-
 def _metrics(
     scores: np.ndarray,
     preds: np.ndarray,
     labels: np.ndarray,
 ) -> Dict[str, float]:
-    # Degenerate cases: if labels are all one class, roc_auc_score raises.
     out: Dict[str, float] = {}
     if labels.sum() == 0 or labels.sum() == len(labels):
         out["roc_auc"] = float("nan")
@@ -134,7 +111,6 @@ def _metrics(
     out["f1"] = float(f1_score(labels, preds, zero_division=0))
     return out
 
-
 def score_with(
     detector_name: str,
     detector: object,
@@ -142,18 +118,15 @@ def score_with(
     labels: np.ndarray,
     variant: str,
 ) -> DetectorResult:
-    """Score a variant with a fitted detector; return scores + metrics."""
     if detector_name == ISOLATION_FOREST:
-        raw = detector.score_samples(embeddings)  # type: ignore[attr-defined]
+        raw = detector.score_samples(embeddings)
     elif detector_name == LOF:
-        raw = detector.score_samples(embeddings)  # type: ignore[attr-defined]
+        raw = detector.score_samples(embeddings)
     else:
         raise ValueError(f"Unknown detector: {detector_name}")
 
-    # Convention: higher = more anomalous. sklearn's score_samples returns
-    # higher = more normal, so negate.
     anomaly_scores = -raw
-    preds = (detector.predict(embeddings) == -1).astype(int)  # type: ignore[attr-defined]
+    preds = (detector.predict(embeddings) == -1).astype(int)
 
     metrics = _metrics(anomaly_scores, preds, labels)
     return DetectorResult(
@@ -165,13 +138,11 @@ def score_with(
         **metrics,
     )
 
-
 def save_scores(result: DetectorResult, scores_dir: Path = M2_SCORES) -> Path:
     scores_dir.mkdir(parents=True, exist_ok=True)
     out = scores_dir / f"{result.variant}_{result.detector}_scores.npy"
     np.save(out, result.scores)
     return out
-
 
 def log_result(result: DetectorResult, notes: str = "") -> None:
     append_detection_row({
@@ -190,7 +161,6 @@ def log_result(result: DetectorResult, notes: str = "") -> None:
         "notes": notes,
     })
 
-
 def evaluate_variants(
     variants: List[str],
     *,
@@ -198,7 +168,6 @@ def evaluate_variants(
     n_estimators: int = 200,
     n_neighbors: int = 20,
 ) -> List[DetectorResult]:
-    """Fit on clean embeddings once, score all listed poisoned variants."""
     clean_emb, _, _ = load_variant("clean")
     detectors = train_detectors(
         clean_emb,

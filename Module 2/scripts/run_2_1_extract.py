@@ -1,16 +1,3 @@
-#!/usr/bin/env python3
-"""Task 2.1 — Extract embeddings for every KB variant.
-
-Usage (from repo root):
-    python "Module 2/scripts/run_2_1_extract.py"              # auto-discover poisoned files
-    python "Module 2/scripts/run_2_1_extract.py" --variants factual_10pct semantic_30pct
-    python "Module 2/scripts/run_2_1_extract.py" --force      # re-encode even if outputs exist
-
-Clean embeddings are assumed to already exist at
-    ../data/embeddings/clean_embeddings.npy  (produced by Vatsal's export_clean_embeddings.py)
-This script only (re-)encodes poisoned KB variants staged under
-    Module 2/data/poisoned_kb/poisoned_<variant>.jsonl
-"""
 from __future__ import annotations
 
 import argparse
@@ -18,17 +5,16 @@ import logging
 import sys
 from pathlib import Path
 
-# Make the src package importable when running as a standalone script.
 _MODULE2_ROOT = Path(__file__).resolve().parents[1]
 if str(_MODULE2_ROOT) not in sys.path:
     sys.path.insert(0, str(_MODULE2_ROOT))
 
-from src.detection.embeddings import (  # noqa: E402
+from src.detection.embeddings import (
     discover_poisoned_variants,
     ensure_clean_labels,
     extract_and_save,
 )
-from src.detection.utils import (  # noqa: E402
+from src.detection.utils import (
     CLEAN_EMBEDDINGS,
     M2_POISONED_KB,
     setup_logging,
@@ -36,7 +22,6 @@ from src.detection.utils import (  # noqa: E402
 )
 
 LOGGER = logging.getLogger("run_2_1_extract")
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Task 2.1 — Encode poisoned KB variants.")
@@ -61,7 +46,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--log-level", type=str, default="INFO")
     return parser.parse_args()
-
 
 def main() -> int:
     args = parse_args()
@@ -108,7 +92,6 @@ def main() -> int:
         return 1
     LOGGER.info("All variants encoded successfully.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

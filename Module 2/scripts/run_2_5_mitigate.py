@@ -1,17 +1,3 @@
-#!/usr/bin/env python3
-"""Task 2.5 — Mitigation pipeline.
-
-Flags poisoned docs with a chosen detector, rebuilds a Chroma vector store over
-the filtered KB via Module 3's unchanged `build_vectorstore.py`, and re-runs
-Module 3's unchanged evaluator on Natural Questions.
-
-Example:
-    python "Module 2/scripts/run_2_5_mitigate.py" \
-        --variant factual_10pct \
-        --detector neural_classifier \
-        --n-examples 200 \
-        --run-undefended
-"""
 from __future__ import annotations
 
 import argparse
@@ -23,13 +9,12 @@ _MODULE2_ROOT = Path(__file__).resolve().parents[1]
 if str(_MODULE2_ROOT) not in sys.path:
     sys.path.insert(0, str(_MODULE2_ROOT))
 
-from src.detection.anomaly_detector import ISOLATION_FOREST, LOF  # noqa: E402
-from src.detection.mitigation import run_mitigation  # noqa: E402
-from src.detection.neural_classifier import NEURAL  # noqa: E402
-from src.detection.utils import MODULE2_ROOT, setup_logging  # noqa: E402
+from src.detection.anomaly_detector import ISOLATION_FOREST, LOF
+from src.detection.mitigation import run_mitigation
+from src.detection.neural_classifier import NEURAL
+from src.detection.utils import MODULE2_ROOT, setup_logging
 
 LOGGER = logging.getLogger("run_2_5_mitigate")
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Task 2.5 — Mitigation pipeline.")
@@ -62,7 +47,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--log-level", type=str, default="INFO")
     return parser.parse_args()
-
 
 def main() -> int:
     args = parse_args()
@@ -97,7 +81,6 @@ def main() -> int:
             f"F1={outcome.undefended_metrics.get('token_f1', 0.0):.4f}"
         )
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
