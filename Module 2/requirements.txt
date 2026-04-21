@@ -1,0 +1,8 @@
+# Module 2 additions on top of Module 3's environment.
+# Install Module 3's requirements first per root TEAMMATE_HANDOVER_ASAP.md, then:
+#   pip install -r "Module 2/requirements.txt"
+
+scikit-learn>=1.4
+torch>=2.1
+numpy>=1.24
+pandas>=2.0

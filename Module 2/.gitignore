@@ -1,0 +1,13 @@
+# Large binary artifacts — share out-of-band, not via git
+data/embeddings/*.npy
+data/poisoned_kb/*.jsonl
+data/filtered_kb/*.jsonl
+data/vectorstores/
+results/scores/*.npy
+models/*.pt
+models/*.pth
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
