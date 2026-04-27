@@ -18,3 +18,4 @@ timestamp_utc,experiment_id,attack_type,poison_rate,detector,n_docs,n_poisoned_t
 2026-04-27T08:35:19.284352+00:00,factual_0.2_perplexity,factual_swap,0.2,perplexity,1000,200,200,0.25,0.25,0.25,0.531,top20pct@ppl>=36.24,model=gpt2
 2026-04-27T08:36:55.352234+00:00,factual_0.3_perplexity,factual_swap,0.3,perplexity,1000,300,300,0.3,0.3,0.3,0.5062,top30pct@ppl>=33.03,model=gpt2
 2026-04-27T08:38:33.102728+00:00,semantic_0.1_perplexity,semantic_distortion,0.1,perplexity,1000,100,100,0.17,0.17,0.17,0.6001,top10pct@ppl>=41.34,model=gpt2
+2026-04-27T08:40:15.690390+00:00,semantic_0.3_perplexity,semantic_distortion,0.3,perplexity,1000,300,300,0.2967,0.2967,0.2967,0.5233,top30pct@ppl>=33.02,model=gpt2
