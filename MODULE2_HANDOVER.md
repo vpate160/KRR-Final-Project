@@ -33,9 +33,20 @@ Diagnostic: cos(emb(poisoned), emb(clean_original)) = **0.9958 mean**, 0.9659 mi
 
 Filter precision per variant tracks the ground-truth poison rate to two decimals — random selection.
 
-## Known gap
+## Task 2.5 RAG re-evaluation (NQ via streaming)
 
-Task 2.5 RAG re-evaluation on NQ skipped. `datasets.load_dataset("natural_questions", split="train[:N]")` triggers full 287-shard download in datasets 4.x; ~30 min on M2 exceeded today's window. Filter-only analysis already implies the result. To complete on SOL: `python "Module 2/scripts/run_2_5_mitigate.py" --variant <v> --detector neural_classifier --threshold 0.5 --n-examples 20 --run-undefended`, append rows to root `results/metrics.csv`.
+`datasets.load_dataset("natural_questions", split="train[:N]")` is monkey-patched to streaming mode in `Module 2/scripts/_run_2_5_with_streaming_nq.py` to bypass the full 287-shard download. n_examples=5 per variant. Rows in root `results/metrics.csv` (`detector=mitigated`):
+
+```
+variant         defended EM  defended F1   undefended F1
+factual_0.1     0.000        0.0023        0.0690
+factual_0.3     0.000        0.0423        --
+semantic_0.1    0.000        0.0023        --
+semantic_0.3    0.000        0.0023        --
+factual_0.2     skipped (filtered KB has 0 docs)
+```
+
+Defended F1 collapses below the undefended baseline because the filter destroys the KB — confirming the detection-at-chance ⇒ mitigation-fails prediction.
 
 ## Backend
 
