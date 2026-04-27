@@ -49,17 +49,29 @@ Module 2/
 ## How to run (once inputs are ready)
 
 Upstream dependencies:
-- Clean KB: `../data/clean_kb/kb.jsonl` (Vatsal, already in repo)
-- Clean embeddings: `../data/embeddings/clean_embeddings.npy` + `clean_doc_ids.json` (Vatsal, already in repo)
-- Poisoned KBs: `data/poisoned_kb/poisoned_factual_*.jsonl` etc. (Hardik, copy here when ready)
+- Clean KB: `../data/clean_kb/kb.jsonl` (Vatsal — already in repo).
+- Clean embeddings: `../data/embeddings/clean_embeddings.npy` + `clean_doc_ids.json` (Vatsal — already in repo).
+- Poisoned KBs: `../data/poisoned_kb/<variant>.jsonl` plus `<variant>_labels.npy` per variant (Hardik). Module 1 ships `factual_0.1`, `factual_0.2`, `factual_0.3`, `semantic_0.1`, `semantic_0.3`. The detection code auto-discovers variants from `../data/poisoned_kb/` (Module 1's location) and falls back to `Module 2/data/poisoned_kb/` for legacy `poisoned_<variant>.jsonl` exports.
 
-Typical run order:
+Pulling Module 1's data into your working tree:
+
+```bash
+# from the repo root, one-time setup
+git remote add hardik https://github.com/hpareek871/KRR-Final-Project.git
+git fetch hardik
+
+# bring in the latest poisoned KB variants and labels
+git checkout hardik/main -- data/poisoned_kb/ logs/
+```
+
+Typical run order (from the `Module 2/` directory):
 
 ```bash
 # Task 2.1 — encode poisoned KBs; clean embeddings are reused from Module 3
-python -m scripts.run_2_1_extract
+python -m scripts.run_2_1_extract                          # all 5 variants
+python -m scripts.run_2_1_extract --variants factual_0.1   # smoke
 
-# Task 2.2 — unsupervised detectors
+# Task 2.2 — unsupervised detectors (Isolation Forest + LOF)
 python -m scripts.run_2_2_anomaly
 
 # Task 2.3 — supervised MLP
@@ -70,8 +82,27 @@ python -m scripts.run_2_4_perplexity
 python -m scripts.run_2_4_llm_judge      # requires Ollama running locally
 
 # Task 2.5 — mitigation (rebuilds vector store + calls Module 3's evaluator)
-python -m scripts.run_2_5_mitigate
+python -m scripts.run_2_5_mitigate --variant factual_0.1 --run-undefended
 ```
+
+## Running on SOL
+
+The bulk of the pipeline (Tasks 2.1, 2.2, 2.3, 2.4 perplexity) is bundled in
+`scripts/run_module2_sol.sh`, a SLURM script modelled on Vatsal's
+`scripts/run_rag_query_sol.sh`. Submit it from the repo root:
+
+```bash
+ssh <asurite>@sol.asu.edu
+cd /scratch/<asurite>/KRR-Final-Project
+git pull origin anushree/module-2-detection
+git fetch hardik && git checkout hardik/main -- data/poisoned_kb/ logs/
+sbatch "Module 2/scripts/run_module2_sol.sh"
+```
+
+Tasks 2.4 LLM-judge and 2.5 require an Ollama server reachable at
+`http://localhost:11434`, so they are not part of the default SLURM job. Run
+them on a node where Ollama is already serving, or start Ollama inside an
+allocated job before invoking those scripts.
 
 ## Respecting Module 3's guardrails
 
