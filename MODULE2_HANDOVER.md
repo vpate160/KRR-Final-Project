@@ -1,45 +1,65 @@
-# Module 2 — Detection & Defense Layer · Handoff
+# Module 2 — Detection & Defense · Handoff
 
-Hey team! Module 2 handoff is now pushed to GitHub and ready for use.
+**Repo:** vpate160/KRR-Final-Project · **Branch:** `main` (PR #3 merged) · **Owner:** Anushree Bhure
 
-**Repo:** https://github.com/vpate160/KRR-Final-Project
-**Branch:** `main` (PR #3 merged)
-**Owner:** Anushree Bhure
+## Tasks shipped
 
-## What's implemented
+| Task | Detector | Implementation | Output |
+|---|---|---|---|
+| 2.1 | mpnet embeddings | `sentence-transformers/all-mpnet-base-v2`, MPS, batch=64, seed=42 | `Module 2/data/embeddings/<variant>_{embeddings.npy,doc_ids.json,labels.npy}` |
+| 2.2 | IsolationForest, LOF | n_estimators=200 / n_neighbors=20, fit on 5000 clean, score 1000-doc variant | `Module 2/results/scores/<variant>_{isolation_forest,lof}_scores.npy` |
+| 2.3 | 2-layer MLP | 768→256→64→1, BCE + early stop, 70/15/15 stratified split, val-tuned threshold | `Module 2/models/<variant>_mlp.pt` (state_dict + threshold) |
+| 2.4a | GPT-2 perplexity | sliding NLL (max_len=1024, stride=512), top-K%% threshold = expected poison rate | `Module 2/results/scores/<variant>_perplexity_scores.npy` |
+| 2.4b | Llama 3.1 8B judge | Q4_K_M via local Ollama, stratified n=100/variant, yes/no parse | `Module 2/results/scores/<variant>_llm_judge_scores.npy` (4/5) |
+| 2.5 | Filter (neural, t=0.5) | MLP rescoring on full 1000 docs, drop flagged | `Module 2/data/filtered_kb/filtered_<variant>_neural_classifier.jsonl` |
 
-- **Task 2.1** — embedding extraction with `sentence-transformers/all-mpnet-base-v2` over clean KB + all 5 poisoned variants
-- **Task 2.2** — Isolation Forest + LOF unsupervised detectors trained on clean embeddings, scored on each variant
-- **Task 2.3** — 2-layer MLP supervised classifier (768 → 256 → 64 → 1) with per-variant training and validation-tuned thresholds
-- **Task 2.4a** — GPT-2 perplexity baseline (top-K% threshold = expected poison rate)
-- **Task 2.4b** — Llama 3.1 8B LLM-as-judge baseline via local Ollama (4 of 5 variants)
-- **Task 2.5** — filter-based mitigation analysis across all 5 variants
+Variants: `factual_0.1`, `factual_0.2`, `factual_0.3`, `semantic_0.1`, `semantic_0.3` (1000 docs each, labels via `<variant>_labels.npy`).
 
-## Current artifacts available
+## Aggregate results
 
-- per-variant embeddings — `Module 2/data/embeddings/`
-- per-doc detection scores for all 5 detectors — `Module 2/results/scores/`
-- per-variant MLP checkpoints with tuned thresholds — `Module 2/models/`
-- detection metrics CSV (24 rows) — `Module 2/results/detection_metrics.csv`
-- mitigation filter summary CSV (5 rows) — `Module 2/results/mitigation_filter_summary.csv`
-- filtered KBs per variant — `Module 2/data/filtered_kb/`
-- SLURM job script for SOL — `Module 2/scripts/run_module2_sol.sh`
+`Module 2/results/detection_metrics.csv` — 24 rows (5 IF + 5 LOF + 5 MLP + 5 perplexity + 4 LLM-judge).
+`Module 2/results/mitigation_filter_summary.csv` — 5 rows.
 
-## Important note
+```
+Detector             ROC-AUC range    Best F1
+isolation_forest     0.47 – 0.55      0.000  (predict() collapsed under contamination='auto')
+lof                  0.50 – 0.55      0.000  (same)
+neural_classifier    0.50 – 0.58      0.466  (recall-collapse at val threshold 0.05)
+perplexity           0.51 – 0.60      0.300  (top-K% with K = poison rate)
+llm_judge            n/a (binary)     0.154  (model answers "no" on >95% of inputs)
+```
 
-The headline finding is a **negative result** that the report should foreground: every embedding-space detector is at or near random (ROC-AUC 0.47 – 0.60) on Module 1's stealthy attacks. Direct measurement: cosine(poisoned, clean original) = **0.9958** mean on `factual_0.1`. mpnet is essentially invariant to single-fact swaps, so the project's central hypothesis is falsified for this attack family. The filter analysis confirms downstream — filter precision tracks the poison rate exactly, which is the signature of random selection.
+Diagnostic: cos(emb(poisoned), emb(clean_original)) = **0.9958 mean**, 0.9659 min over a 30-pair sample on `factual_0.1`. mpnet is invariant to Module 1's single-fact swaps; embedding-space hypothesis is **falsified** for this attack family.
 
-Task 2.5's RAG re-evaluation on Natural Questions was not run end-to-end. NQ first-time download via `datasets.load_dataset` triggers a full 287-shard pull (~30 min on M2) that exceeded today's submission window. The filter-only analysis already establishes the conclusion; the EM/F1 recovery row is a clean follow-up to run on SOL once accessible.
+Filter precision per variant tracks the ground-truth poison rate to two decimals — random selection.
 
-## Implementation note
+## Known gap
 
-The full evaluation was run locally on Apple M2 with MPS rather than on SOL, since SOL access was unavailable today. Llama 3.1 8B for the LLM-judge baseline runs through local Ollama (`llama3.1:8b` Q4_K_M) — same backend Vatsal is using for Module 3, so embeddings and judge outputs are comparable.
+Task 2.5 RAG re-evaluation on NQ skipped. `datasets.load_dataset("natural_questions", split="train[:N]")` triggers full 287-shard download in datasets 4.x; ~30 min on M2 exceeded today's window. Filter-only analysis already implies the result. To complete on SOL: `python "Module 2/scripts/run_2_5_mitigate.py" --variant <v> --detector neural_classifier --threshold 0.5 --n-examples 20 --run-undefended`, append rows to root `results/metrics.csv`.
 
-## Integration status
+## Backend
 
-- **Hardik** — no further input needed from your side; your `data/poisoned_kb/` exports were consumed end-to-end.
-- **Latika** — clean + per-variant embeddings, per-doc scores for all 5 detectors, and both metrics CSVs are on `main`. UMAP plots will show poisoned and clean overlapping (the qualitative version of AUC ≈ 0.5) — that overlap is itself a useful figure for the report.
-- **Lance** — `detection_metrics.csv` + `mitigation_filter_summary.csv` are the source of truth for the report's Tables 1–3. Headline numbers and the falsification framing are captured in PR #3's description if helpful for the methods/analysis sections.
-- **Vatsal** — thanks for the merge; Module 2 is on `main`. No further changes needed from M3 unless you want to re-run Task 2.5's NQ eval on SOL once HF access is sorted.
+Local M2 + MPS. Llama 3.1 8B Q4_K_M via Ollama at `http://localhost:11434` (matches Vatsal's M3 backend; embeddings and judge outputs are comparable across modules).
 
-Please pull the latest `main` and use `Module 2/README.md` + the PR #3 description as the starting point.
+## Reproduce
+
+```bash
+git pull origin main
+git remote add hardik https://github.com/hpareek871/KRR-Final-Project.git
+git fetch hardik && git checkout hardik/main -- data/poisoned_kb/ logs/
+source .venv/bin/activate
+cd "Module 2"
+python scripts/run_2_1_extract.py
+python scripts/run_2_2_anomaly.py
+python scripts/run_2_3_neural.py
+python scripts/run_2_4_perplexity.py
+python scripts/run_2_4_llm_judge.py --max-docs 100
+```
+
+SOL: `sbatch "Module 2/scripts/run_module2_sol.sh"` from repo root.
+
+## Consumers
+
+- **M4 (Latika):** `Module 2/data/embeddings/`, `Module 2/results/scores/`, both CSVs.
+- **M5 (Lance):** both CSVs + the cosine-invariance number for the falsification framing.
+- **M1 (Hardik) / M3 (Vatsal):** no further input required.
