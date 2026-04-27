@@ -1,0 +1,20 @@
+timestamp_utc,experiment_id,attack_type,poison_rate,detector,n_docs,n_poisoned_true,n_flagged,precision,recall,f1,roc_auc,threshold,notes
+2026-04-27T08:29:52.848825+00:00,factual_0.1_isolation_forest,factual_swap,0.1,isolation_forest,1000,100,0,0.0,0.0,0.0,0.5467,auto,
+2026-04-27T08:29:52.937117+00:00,factual_0.1_lof,factual_swap,0.1,lof,1000,100,0,0.0,0.0,0.0,0.5476,auto,
+2026-04-27T08:29:52.971602+00:00,factual_0.2_isolation_forest,factual_swap,0.2,isolation_forest,1000,200,0,0.0,0.0,0.0,0.4954,auto,
+2026-04-27T08:29:53.061984+00:00,factual_0.2_lof,factual_swap,0.2,lof,1000,200,0,0.0,0.0,0.0,0.5274,auto,
+2026-04-27T08:29:53.095046+00:00,factual_0.3_isolation_forest,factual_swap,0.3,isolation_forest,1000,300,0,0.0,0.0,0.0,0.4868,auto,
+2026-04-27T08:29:53.188001+00:00,factual_0.3_lof,factual_swap,0.3,lof,1000,300,0,0.0,0.0,0.0,0.4999,auto,
+2026-04-27T08:29:53.221678+00:00,semantic_0.1_isolation_forest,semantic_distortion,0.1,isolation_forest,1000,100,0,0.0,0.0,0.0,0.5038,auto,
+2026-04-27T08:29:53.309163+00:00,semantic_0.1_lof,semantic_distortion,0.1,lof,1000,100,0,0.0,0.0,0.0,0.5484,auto,
+2026-04-27T08:29:53.341042+00:00,semantic_0.3_isolation_forest,semantic_distortion,0.3,isolation_forest,1000,300,0,0.0,0.0,0.0,0.4686,auto,
+2026-04-27T08:29:53.436042+00:00,semantic_0.3_lof,semantic_distortion,0.3,lof,1000,300,0,0.0,0.0,0.0,0.5012,auto,
+2026-04-27T08:31:37.241526+00:00,factual_0.1_neural_classifier,factual_swap,0.1,neural_classifier,300,30,300,0.1,1.0,0.1818,0.4514,0.05,best_epoch=3 best_val_loss=1.2184
+2026-04-27T08:31:37.338702+00:00,factual_0.2_neural_classifier,factual_swap,0.2,neural_classifier,300,60,300,0.2,1.0,0.3333,0.5768,0.05,best_epoch=1 best_val_loss=1.1097
+2026-04-27T08:31:37.442393+00:00,factual_0.3_neural_classifier,factual_swap,0.3,neural_classifier,300,90,300,0.3,1.0,0.4615,0.5593,0.05,best_epoch=2 best_val_loss=0.9680
+2026-04-27T08:31:37.568681+00:00,semantic_0.1_neural_classifier,semantic_distortion,0.1,neural_classifier,300,30,300,0.1,1.0,0.1818,0.5,0.05,best_epoch=4 best_val_loss=1.2160
+2026-04-27T08:31:37.671098+00:00,semantic_0.3_neural_classifier,semantic_distortion,0.3,neural_classifier,300,90,296,0.3041,1.0,0.4663,0.581,0.50,best_epoch=2 best_val_loss=0.9665
+2026-04-27T08:33:42.018219+00:00,factual_0.1_perplexity,factual_swap,0.1,perplexity,1000,100,100,0.15,0.15,0.15,0.5848,top10pct@ppl>=41.15,model=gpt2
+2026-04-27T08:35:19.284352+00:00,factual_0.2_perplexity,factual_swap,0.2,perplexity,1000,200,200,0.25,0.25,0.25,0.531,top20pct@ppl>=36.24,model=gpt2
+2026-04-27T08:36:55.352234+00:00,factual_0.3_perplexity,factual_swap,0.3,perplexity,1000,300,300,0.3,0.3,0.3,0.5062,top30pct@ppl>=33.03,model=gpt2
+2026-04-27T08:38:33.102728+00:00,semantic_0.1_perplexity,semantic_distortion,0.1,perplexity,1000,100,100,0.17,0.17,0.17,0.6001,top10pct@ppl>=41.34,model=gpt2
