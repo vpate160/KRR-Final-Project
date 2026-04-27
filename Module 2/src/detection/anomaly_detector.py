@@ -47,7 +47,15 @@ def _poison_rate_from_variant(variant: str) -> float:
             try:
                 return int(part[:-3]) / 100.0
             except ValueError:
-                return 0.0
+                continue
+        try:
+            value = float(part)
+        except ValueError:
+            continue
+        if 0.0 < value < 1.0:
+            return value
+        if 1.0 <= value <= 100.0:
+            return value / 100.0
     return 0.0
 
 def _attack_type_from_variant(variant: str) -> str:

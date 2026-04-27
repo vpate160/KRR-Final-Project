@@ -84,6 +84,11 @@ def test_variant_name_parsers() -> None:
         ("semantic_10pct", "semantic_distortion", 0.1),
         ("semantic_30pct", "semantic_distortion", 0.3),
         ("stealthy_injection_5pct", "stealthy_injection", 0.05),
+        ("factual_0.1", "factual_swap", 0.1),
+        ("factual_0.2", "factual_swap", 0.2),
+        ("factual_0.3", "factual_swap", 0.3),
+        ("semantic_0.1", "semantic_distortion", 0.1),
+        ("semantic_0.3", "semantic_distortion", 0.3),
     ]
     for variant, expected_type, expected_rate in cases:
         got_type = _attack_type_from_variant(variant)
@@ -94,9 +99,101 @@ def test_variant_name_parsers() -> None:
         )
     print("OK test_variant_name_parsers")
 
+def test_extract_fields_with_label_override() -> None:
+    from src.detection.embeddings import extract_fields
+
+    records = [
+        {"id": "wiki_001", "text": "alpha", "is_poisoned": False},
+        {"id": "wiki_002", "text": "beta", "is_poisoned": False},
+        {"id": "wiki_003", "text": "gamma", "is_poisoned": False},
+    ]
+    override = np.array([0, 1, 0], dtype=np.int8)
+    doc_ids, texts, labels = extract_fields(records, labels_override=override)
+    assert doc_ids == ["wiki_001", "wiki_002", "wiki_003"]
+    assert texts == ["alpha", "beta", "gamma"]
+    assert labels.tolist() == [0, 1, 0]
+    assert labels.dtype == np.int8
+
+    bad = np.array([0, 1], dtype=np.int8)
+    raised = False
+    try:
+        extract_fields(records, labels_override=bad)
+    except ValueError:
+        raised = True
+    assert raised, "extract_fields should reject mismatched override length"
+    print("OK test_extract_fields_with_label_override")
+
+def test_extract_fields_synthesizes_doc_id_when_missing() -> None:
+    from src.detection.embeddings import extract_fields
+
+    records = [
+        {"text": "alpha", "is_poisoned": False},
+        {"text": "beta", "is_poisoned": True},
+    ]
+    doc_ids, texts, labels = extract_fields(records)
+    assert doc_ids == ["doc_000000", "doc_000001"]
+    assert texts == ["alpha", "beta"]
+    assert labels.tolist() == [0, 1]
+    print("OK test_extract_fields_synthesizes_doc_id_when_missing")
+
+def test_resolve_helpers_with_hardik_layout() -> None:
+    from src.detection import utils
+
+    with tempfile.TemporaryDirectory() as td:
+        tmp_root = Path(td)
+        (tmp_root / "factual_0.1.jsonl").write_text("", encoding="utf-8")
+        np.save(tmp_root / "factual_0.1_labels.npy", np.zeros(3, dtype=np.int8))
+
+        original = utils.POISONED_KB_SEARCH_DIRS[:]
+        utils.POISONED_KB_SEARCH_DIRS[:] = [tmp_root]
+        try:
+            kb = utils.resolve_kb_path("factual_0.1")
+            labels = utils.resolve_external_labels_npy("factual_0.1")
+            paths = utils.variant_paths("factual_0.1")
+        finally:
+            utils.POISONED_KB_SEARCH_DIRS[:] = original
+
+        assert kb == tmp_root / "factual_0.1.jsonl"
+        assert labels == tmp_root / "factual_0.1_labels.npy"
+        assert paths["kb"] == tmp_root / "factual_0.1.jsonl"
+        assert utils.resolve_external_labels_npy("nonexistent") is None
+    print("OK test_resolve_helpers_with_hardik_layout")
+
+def test_discover_poisoned_variants_hardik_layout() -> None:
+    from src.detection.embeddings import discover_poisoned_variants
+
+    with tempfile.TemporaryDirectory() as td:
+        tmp_root = Path(td)
+        for name in (
+            "factual_0.1.jsonl",
+            "factual_0.2.jsonl",
+            "factual_0.3.jsonl",
+            "semantic_0.1.jsonl",
+            "semantic_0.3.jsonl",
+            "ignore_me.jsonl",
+        ):
+            (tmp_root / name).write_text("", encoding="utf-8")
+
+        found = discover_poisoned_variants(poisoned_dir=tmp_root)
+        names = [v for v, _ in found]
+        assert names == [
+            "factual_0.1",
+            "factual_0.2",
+            "factual_0.3",
+            "semantic_0.1",
+            "semantic_0.3",
+        ], f"unexpected variants: {names}"
+        for variant, path in found:
+            assert path == tmp_root / f"{variant}.jsonl"
+    print("OK test_discover_poisoned_variants_hardik_layout")
+
 def main() -> int:
     test_append_detection_row_to_tempfile()
     test_variant_name_parsers()
+    test_extract_fields_with_label_override()
+    test_extract_fields_synthesizes_doc_id_when_missing()
+    test_resolve_helpers_with_hardik_layout()
+    test_discover_poisoned_variants_hardik_layout()
     test_train_detectors_and_score()
     print("\nALL SMOKE TESTS PASSED")
     return 0

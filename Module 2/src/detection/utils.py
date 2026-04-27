@@ -29,6 +29,10 @@ M2_MODELS: Path = MODULE2_ROOT / "models"
 M2_SCORES: Path = MODULE2_ROOT / "results" / "scores"
 M2_DETECTION_CSV: Path = MODULE2_ROOT / "results" / "detection_metrics.csv"
 
+HARDIK_POISONED_KB: Path = REPO_ROOT / "data" / "poisoned_kb"
+
+POISONED_KB_SEARCH_DIRS: List[Path] = [HARDIK_POISONED_KB, M2_POISONED_KB]
+
 EMBEDDING_MODEL: str = "sentence-transformers/all-mpnet-base-v2"
 EMBEDDING_DIM: int = 768
 SEED: int = 42
@@ -105,6 +109,25 @@ def append_detection_row(row: Dict[str, Any], csv_path: Path = M2_DETECTION_CSV)
             writer.writeheader()
         writer.writerow(full_row)
 
+def resolve_kb_path(variant: str) -> Path:
+    candidates = []
+    for root in POISONED_KB_SEARCH_DIRS:
+        candidates.append(root / f"{variant}.jsonl")
+        candidates.append(root / f"poisoned_{variant}.jsonl")
+    for c in candidates:
+        if c.exists():
+            return c
+    return candidates[0]
+
+
+def resolve_external_labels_npy(variant: str) -> Optional[Path]:
+    for root in POISONED_KB_SEARCH_DIRS:
+        candidate = root / f"{variant}_labels.npy"
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def variant_paths(variant: str) -> Dict[str, Path]:
     if variant == "clean":
         return {
@@ -117,5 +140,5 @@ def variant_paths(variant: str) -> Dict[str, Path]:
         "embeddings": M2_EMBEDDINGS / f"{variant}_embeddings.npy",
         "doc_ids": M2_EMBEDDINGS / f"{variant}_doc_ids.json",
         "labels": M2_EMBEDDINGS / f"{variant}_labels.npy",
-        "kb": M2_POISONED_KB / f"poisoned_{variant}.jsonl",
+        "kb": resolve_kb_path(variant),
     }
