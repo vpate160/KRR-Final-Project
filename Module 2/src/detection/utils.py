@@ -1,4 +1,3 @@
-"""Shared utilities for Module 2: paths, seeds, logging, metrics CSV writer."""
 from __future__ import annotations
 
 import csv
@@ -51,14 +50,12 @@ DETECTION_CSV_FIELDS: List[str] = [
     "notes",
 ]
 
-
 def setup_logging(level: str = "INFO") -> None:
     logging.basicConfig(
         level=getattr(logging, level.upper(), logging.INFO),
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
         datefmt="%H:%M:%S",
     )
-
 
 def set_seed(seed: int = SEED) -> None:
     random.seed(seed)
@@ -72,7 +69,6 @@ def set_seed(seed: int = SEED) -> None:
     except ImportError:
         pass
 
-
 def load_jsonl(path: Path) -> List[Dict[str, Any]]:
     records: List[Dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as f:
@@ -82,24 +78,20 @@ def load_jsonl(path: Path) -> List[Dict[str, Any]]:
                 records.append(json.loads(line))
     return records
 
-
 def save_jsonl(path: Path, records: List[Dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
         for rec in records:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
-
 def load_json(path: Path) -> Any:
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
-
 
 def save_json(path: Path, obj: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
         json.dump(obj, f, ensure_ascii=False, indent=2)
-
 
 def append_detection_row(row: Dict[str, Any], csv_path: Path = M2_DETECTION_CSV) -> None:
     csv_path.parent.mkdir(parents=True, exist_ok=True)
@@ -113,12 +105,7 @@ def append_detection_row(row: Dict[str, Any], csv_path: Path = M2_DETECTION_CSV)
             writer.writeheader()
         writer.writerow(full_row)
 
-
 def variant_paths(variant: str) -> Dict[str, Path]:
-    """Canonical output paths for a given KB variant (e.g. 'factual_10pct').
-
-    Clean embeddings live in Module 3's directory; everything else lives under Module 2.
-    """
     if variant == "clean":
         return {
             "embeddings": CLEAN_EMBEDDINGS,
