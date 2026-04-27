@@ -11,7 +11,7 @@ if str(_MODULE2_ROOT) not in sys.path:
 
 from src.detection.embeddings import discover_poisoned_variants
 from src.detection.llm_judge import evaluate_variants
-from src.detection.utils import M2_POISONED_KB, setup_logging
+from src.detection.utils import POISONED_KB_SEARCH_DIRS, setup_logging
 
 LOGGER = logging.getLogger("run_2_4_llm_judge")
 
@@ -41,8 +41,9 @@ def main() -> int:
         discovered = discover_poisoned_variants()
         if not discovered:
             LOGGER.error(
-                "No poisoned variants found. Place files at %s or pass --variants.",
-                M2_POISONED_KB,
+                "No poisoned variants found. Searched: %s. Pass --variants explicitly "
+                "or copy Module 1's <variant>.jsonl files into one of those dirs.",
+                [str(p) for p in POISONED_KB_SEARCH_DIRS],
             )
             return 2
         variants = [v for v, _ in discovered]

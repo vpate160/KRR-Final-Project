@@ -16,7 +16,7 @@ from src.detection.embeddings import (
 )
 from src.detection.utils import (
     CLEAN_EMBEDDINGS,
-    M2_POISONED_KB,
+    POISONED_KB_SEARCH_DIRS,
     setup_logging,
     variant_paths,
 )
@@ -29,8 +29,8 @@ def parse_args() -> argparse.Namespace:
         "--variants",
         nargs="*",
         default=None,
-        help="Explicit variant names (e.g. factual_10pct). If omitted, auto-discover from "
-        "Module 2/data/poisoned_kb/poisoned_*.jsonl.",
+        help="Explicit variant names (e.g. factual_0.1). If omitted, auto-discover from "
+        "data/poisoned_kb/<variant>.jsonl.",
     )
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument(
@@ -66,9 +66,10 @@ def main() -> int:
         targets = discover_poisoned_variants()
         if not targets:
             LOGGER.warning(
-                "No poisoned KBs found in %s. Copy Hardik's files there as "
-                "poisoned_<variant>.jsonl (e.g. poisoned_factual_10pct.jsonl).",
-                M2_POISONED_KB,
+                "No poisoned KBs found. Searched: %s. Module 1 ships variants as "
+                "<variant>.jsonl (e.g. factual_0.1.jsonl) with a sibling "
+                "<variant>_labels.npy.",
+                [str(p) for p in POISONED_KB_SEARCH_DIRS],
             )
             return 0
 

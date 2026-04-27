@@ -12,8 +12,10 @@ from .utils import (
     EMBEDDING_DIM,
     EMBEDDING_MODEL,
     M2_EMBEDDINGS,
+    POISONED_KB_SEARCH_DIRS,
     load_json,
     load_jsonl,
+    resolve_external_labels_npy,
     save_json,
     set_seed,
     variant_paths,
@@ -59,21 +61,41 @@ def encode_texts(
         )
     return embeddings.astype(np.float32)
 
-def extract_fields(records: List[Dict]) -> Tuple[List[str], List[str], np.ndarray]:
+def _extract_doc_id(rec: Dict, index: int) -> str:
+    for key in ("id", "doc_id", "_id"):
+        value = rec.get(key)
+        if isinstance(value, str) and value.strip():
+            return value
+        if isinstance(value, int):
+            return str(value)
+    return f"doc_{index:06d}"
+
+
+def extract_fields(
+    records: List[Dict],
+    labels_override: Optional[np.ndarray] = None,
+) -> Tuple[List[str], List[str], np.ndarray]:
     doc_ids: List[str] = []
     texts: List[str] = []
-    labels: List[int] = []
+    inline_labels: List[int] = []
     for i, rec in enumerate(records):
-        doc_id = rec.get("id")
+        doc_id = _extract_doc_id(rec, i)
         text = rec.get("text")
-        if not isinstance(doc_id, str) or not doc_id.strip():
-            raise ValueError(f"Record {i} missing valid 'id'")
         if not isinstance(text, str) or not text.strip():
             raise ValueError(f"Record {i} ({doc_id}) missing valid 'text'")
         doc_ids.append(doc_id)
         texts.append(text)
-        labels.append(1 if bool(rec.get("is_poisoned", False)) else 0)
-    return doc_ids, texts, np.asarray(labels, dtype=np.int8)
+        inline_labels.append(1 if bool(rec.get("is_poisoned", False)) else 0)
+
+    if labels_override is not None:
+        if labels_override.shape[0] != len(records):
+            raise ValueError(
+                f"labels_override length {labels_override.shape[0]} != records {len(records)}"
+            )
+        labels = labels_override.astype(np.int8)
+    else:
+        labels = np.asarray(inline_labels, dtype=np.int8)
+    return doc_ids, texts, labels
 
 def extract_and_save(
     kb_path: Path,
@@ -93,7 +115,15 @@ def extract_and_save(
 
     LOGGER.info("Loading KB for variant '%s' from %s", variant, kb_path)
     records = load_jsonl(kb_path)
-    doc_ids, texts, labels = extract_fields(records)
+
+    labels_override = None
+    external_labels = resolve_external_labels_npy(variant)
+    if external_labels is not None:
+        loaded = np.load(external_labels)
+        labels_override = loaded.astype(np.int8)
+        LOGGER.info("Using external labels from %s (sum=%d)", external_labels, int(labels_override.sum()))
+
+    doc_ids, texts, labels = extract_fields(records, labels_override=labels_override)
     LOGGER.info("Loaded %d docs (poisoned=%d)", len(doc_ids), int(labels.sum()))
 
     set_seed()
@@ -147,14 +177,27 @@ def load_variant(variant: str) -> Tuple[np.ndarray, List[str], np.ndarray]:
         )
     return embeddings, doc_ids, labels
 
-def discover_poisoned_variants(poisoned_dir: Optional[Path] = None) -> List[Tuple[str, Path]]:
-    from .utils import M2_POISONED_KB
+_VARIANT_PREFIXES = ("factual_", "semantic_", "stealthy_", "injection_")
 
-    root = poisoned_dir or M2_POISONED_KB
-    if not root.exists():
-        return []
-    out: List[Tuple[str, Path]] = []
-    for path in sorted(root.glob("poisoned_*.jsonl")):
-        variant = path.stem[len("poisoned_"):]
-        out.append((variant, path))
-    return out
+
+def discover_poisoned_variants(poisoned_dir: Optional[Path] = None) -> List[Tuple[str, Path]]:
+    if poisoned_dir is not None:
+        roots = [poisoned_dir]
+    else:
+        roots = [r for r in POISONED_KB_SEARCH_DIRS if r.exists()]
+
+    found: Dict[str, Path] = {}
+    for root in roots:
+        if not root.exists():
+            continue
+        for path in sorted(root.glob("*.jsonl")):
+            stem = path.stem
+            if stem.startswith("poisoned_"):
+                variant = stem[len("poisoned_"):]
+            elif any(stem.startswith(p) for p in _VARIANT_PREFIXES):
+                variant = stem
+            else:
+                continue
+            if variant not in found:
+                found[variant] = path
+    return sorted(found.items())
