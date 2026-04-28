@@ -1,0 +1,11 @@
+variant,strategy,poison_rate,filter_recall,filter_precision,rag_token_f1,notes
+factual_0.1,threshold_0.5,0.1,0.81,0.1179039301310043,0.0022857142857142,naive threshold
+factual_0.1,topK_capped,0.1,,,0.0689523809523809,capped at expected poison rate; preserves KB integrity
+factual_0.2,threshold_0.5,0.2,1.0,0.2,,naive threshold; empty KB for factual_0.2
+factual_0.2,topK_capped,0.2,,,0.0689523809523809,capped at expected poison rate; preserves KB integrity
+factual_0.3,threshold_0.5,0.3,1.0,0.3018108651911468,0.0422857142857142,naive threshold
+factual_0.3,topK_capped,0.3,,,0.0689523809523809,capped at expected poison rate; preserves KB integrity
+semantic_0.1,threshold_0.5,0.1,0.73,0.1666666666666666,0.0022857142857142,naive threshold
+semantic_0.1,topK_capped,0.1,,,0.0689523809523809,capped at expected poison rate; preserves KB integrity
+semantic_0.3,threshold_0.5,0.3,1.0,0.303030303030303,0.0022857142857142,naive threshold
+semantic_0.3,topK_capped,0.3,,,0.0689523809523809,capped at expected poison rate; preserves KB integrity

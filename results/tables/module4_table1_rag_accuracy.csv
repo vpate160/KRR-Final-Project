@@ -1,0 +1,12 @@
+timestamp_utc,attack_type,poison_rate,detector,dataset,n_examples,exact_match,token_f1,generation_backend,ollama_model
+2026-04-20T02:56:37.957433+00:00,clean,0.0,none,natural_questions,1000,0.061,0.1068686327186835,ollama,llama3.1:8b
+2026-04-27T19:01:12.417531+00:00,factual_swap,0.1,mitigated,natural_questions,5,0.0,0.0022857142857142,ollama,llama3.1:8b
+2026-04-27T20:56:20.098563+00:00,factual_swap,0.1,mitigated_topK,natural_questions,5,0.0,0.0689523809523809,ollama,llama3.1:8b
+2026-04-27T19:04:36.176616+00:00,factual_swap,0.1,none,natural_questions,5,0.0,0.0689523809523809,ollama,llama3.1:8b
+2026-04-27T21:00:22.283391+00:00,factual_swap,0.2,mitigated_topK,natural_questions,5,0.0,0.0689523809523809,ollama,llama3.1:8b
+2026-04-27T19:06:57.957425+00:00,factual_swap,0.3,mitigated,natural_questions,5,0.0,0.0422857142857142,ollama,llama3.1:8b
+2026-04-27T21:04:04.533078+00:00,factual_swap,0.3,mitigated_topK,natural_questions,5,0.0,0.0689523809523809,ollama,llama3.1:8b
+2026-04-27T19:09:52.696819+00:00,semantic_distortion,0.1,mitigated,natural_questions,5,0.0,0.0022857142857142,ollama,llama3.1:8b
+2026-04-27T21:08:05.435728+00:00,semantic_distortion,0.1,mitigated_topK,natural_questions,5,0.0,0.0689523809523809,ollama,llama3.1:8b
+2026-04-27T19:12:17.909108+00:00,semantic_distortion,0.3,mitigated,natural_questions,5,0.0,0.0022857142857142,ollama,llama3.1:8b
+2026-04-27T21:11:40.375672+00:00,semantic_distortion,0.3,mitigated_topK,natural_questions,5,0.0,0.0689523809523809,ollama,llama3.1:8b
